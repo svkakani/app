@@ -19,12 +19,6 @@ import (
 	"gotest.tools/icmd"
 )
 
-// just run a command discarding everything
-func runCommand(exe string, args ...string) {
-	cmd := exec.Command(exe, args...)
-	cmd.CombinedOutput()
-}
-
 // Run command, assert it succeeds, return its output
 func assertCommand(t *testing.T, exe string, args ...string) []byte {
 	t.Helper()
@@ -283,32 +277,11 @@ func TestImageBinary(t *testing.T) {
 	r := startRegistry(t)
 	defer r.stop(t)
 	registry := r.getAddress(t)
-	defer func() {
-		// no way to match both in one command
-		cmd1 := exec.Command("docker", "image", "ls", "--format", "{{.ID}}", "--filter", "reference=*/*envvariables*")
-		o1, _ := cmd1.Output()
-		cmd2 := exec.Command("docker", "image", "ls", "--format", "{{.ID}}", "--filter", "reference=*/*/*envvariables*")
-		o2, _ := cmd2.Output()
-		refs := strings.Split(string(append(o1, o2...)), "\n")
-		args := []string{"image", "rm", "-f"}
-		args = append(args, refs...)
-		runCommand("docker", args...)
-	}()
-	// save with tag/prefix override
-	assertCommand(t, dockerApp, "save", "-t", "mytag", "--namespace", registry+"/myuser", "render/envvariables")
-	assertCommandOutput(t, "image-inspect-labels.golden", "docker", "inspect", "-f", "{{.Config.Labels.maintainers}}", registry+"/myuser/envvariables.dockerapp:mytag")
-	// save with tag/prefix from metadata
-	assertCommand(t, dockerApp, "save", "render/envvariables")
-	assertCommandOutput(t, "image-inspect-labels.golden", "docker", "inspect", "-f", "{{.Config.Labels.maintainers}}", "alice/envvariables.dockerapp:0.1.0")
 	// push to a registry
 	assertCommand(t, dockerApp, "push", "--namespace", registry+"/myuser", "render/envvariables")
 	assertCommand(t, dockerApp, "push", "--namespace", registry+"/myuser", "-t", "latest", "render/envvariables")
-	assertCommand(t, "docker", "image", "rm", registry+"/myuser/envvariables.dockerapp:0.1.0")
 	assertCommand(t, dockerApp, "inspect", registry+"/myuser/envvariables.dockerapp:0.1.0")
 	assertCommand(t, dockerApp, "inspect", registry+"/myuser/envvariables.dockerapp")
 	assertCommand(t, dockerApp, "inspect", registry+"/myuser/envvariables")
 	assertCommand(t, dockerApp, "inspect", registry+"/myuser/envvariables:0.1.0")
-	// various commands from an image
-	assertCommand(t, dockerApp, "inspect", "alice/envvariables:0.1.0")
-	assertCommand(t, dockerApp, "inspect", "alice/envvariables.dockerapp:0.1.0")
 }

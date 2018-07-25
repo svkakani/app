@@ -6,7 +6,6 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -74,28 +73,16 @@ func extractImage(appname string) (ExtractedApp, error) {
 	if err != nil {
 		return ExtractedApp{}, errors.Wrap(err, "failed to create temporary directory")
 	}
-	defer os.RemoveAll(tempDir)
-	err = Load(imagename, tempDir)
+	err = Pull(imagename, tempDir)
 	if err != nil {
-		if !strings.Contains(imagename, "/") {
-			return ExtractedApp{}, fmt.Errorf("could not locate application in either filesystem or docker image")
-		}
-		// Try to pull it
-		cmd := exec.Command("docker", "pull", imagename)
-		if err := cmd.Run(); err != nil {
-			return ExtractedApp{}, fmt.Errorf("could not locate application in filesystem, docker image or registry")
-		}
-		if err := Load(imagename, tempDir); err != nil {
-			return ExtractedApp{}, errors.Wrap(err, "failed to load pulled image")
-		}
+		os.RemoveAll(tempDir)
+		return ExtractedApp{}, err
 	}
-	// this gave us a compressed app, run through extract again
-	app, err := Extract(filepath.Join(tempDir, appname))
 	return ExtractedApp{
 		OriginalAppName: "",
-		AppName:         app.AppName,
-		Cleanup:         app.Cleanup,
-	}, err
+		AppName:         filepath.Join(tempDir, internal.DirNameFromAppName(appname)),
+		Cleanup:         func() { os.RemoveAll(tempDir) },
+	}, nil
 }
 
 // Extract extracts the app content if argument is an archive, or does nothing if a dir.
