@@ -10,6 +10,7 @@ func addCommands(cmd *cobra.Command) {
 		pullCmd(),
 		listCmd(),
 		tagsCmd(),
+		renderCmd(),
 	)
 }
 
