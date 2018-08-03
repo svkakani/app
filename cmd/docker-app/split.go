@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/docker/app/internal/packager"
+	"github.com/docker/app/lib/dockerapp"
 	"github.com/docker/cli/cli"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -17,23 +17,22 @@ func splitCmd() *cobra.Command {
 		Short: "Split a single-file application into multiple files",
 		Args:  cli.RequiresMaxArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			extractedApp, err := packager.Extract(firstOrEmpty(args))
+			app, err := dockerapp.Load(firstOrEmpty(args))
 			if err != nil {
 				return err
 			}
-			defer extractedApp.Cleanup()
 			inPlace := splitOutputDir == ""
 			if inPlace {
-				splitOutputDir = extractedApp.OriginalAppName + ".tmp"
+				splitOutputDir = app.Origin + ".tmp"
 			}
-			if err := packager.Split(extractedApp.AppName, splitOutputDir); err != nil {
+			if err := dockerapp.ToDirectory(app, splitOutputDir); err != nil {
 				return err
 			}
 			if inPlace {
-				if err := os.RemoveAll(extractedApp.OriginalAppName); err != nil {
+				if err := os.RemoveAll(app.Origin); err != nil {
 					return errors.Wrap(err, "failed to erase previous application directory")
 				}
-				if err := os.Rename(splitOutputDir, extractedApp.OriginalAppName); err != nil {
+				if err := os.Rename(splitOutputDir, app.Origin); err != nil {
 					return errors.Wrap(err, "failed to rename new application directory")
 				}
 			}

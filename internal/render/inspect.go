@@ -3,12 +3,10 @@ package render
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
-	"path/filepath"
 	"sort"
 	"text/tabwriter"
 
-	"github.com/docker/app/internal"
+	"github.com/docker/app/lib/dockerapp"
 	"github.com/docker/app/internal/settings"
 	"github.com/docker/app/internal/types"
 	"github.com/pkg/errors"
@@ -16,20 +14,14 @@ import (
 )
 
 // Inspect dumps the metadata of an app
-func Inspect(out io.Writer, appname string) error {
-	metaFile := filepath.Join(appname, internal.MetadataFileName)
-	metaContent, err := ioutil.ReadFile(metaFile)
-	if err != nil {
-		return errors.Wrap(err, "failed to read application metadata")
-	}
+func Inspect(out io.Writer, app dockerapp.DockerApp) error {
 	var meta types.AppMetadata
-	err = yaml.Unmarshal(metaContent, &meta)
+	err := yaml.Unmarshal(app.Raw.Metadata, &meta)
 	if err != nil {
 		return errors.Wrap(err, "failed to parse application metadata")
 	}
 	// extract settings
-	settingsFile := filepath.Join(appname, internal.SettingsFileName)
-	s, err := settings.LoadFile(settingsFile)
+	s, err := settings.LoadData(app.Raw.Settings)
 	if err != nil {
 		return errors.Wrap(err, "failed to load application settings")
 	}

@@ -46,6 +46,29 @@ func LoadFile(path string, ops ...func(*Options)) (Settings, error) {
 	return Load(r, ops...)
 }
 
+// LoadData loads data in settings
+func LoadData(data []byte, ops ...func(*Options)) (Settings, error) {
+	options := &Options{}
+	for _, op := range ops {
+		op(options)
+	}
+	s := make(map[interface{}]interface{})
+	if err := yaml.Unmarshal(data, s); err != nil {
+		return nil, err
+	}
+	converted, err := convertToStringKeysRecursive(s, "")
+	if err != nil {
+		return nil, err
+	}
+	settings := converted.(map[string]interface{})
+	if options.prefix != "" {
+		settings = map[string]interface{}{
+			options.prefix: settings,
+		}
+	}
+	return settings, nil
+}
+
 // LoadFiles loads multiple path in settings, merging them.
 func LoadFiles(paths []string, ops ...func(*Options)) (Settings, error) {
 	m := Settings(map[string]interface{}{})

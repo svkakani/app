@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/docker/app/internal"
-
+	"github.com/docker/app/lib/dockerapp"
 	"gotest.tools/assert"
 	is "gotest.tools/assert/cmp"
 	"gotest.tools/fs"
@@ -37,7 +37,9 @@ func TestInspectErrorsOnFiles(t *testing.T) {
 		"no-settings-app":          "failed to load application settings",
 		"unparseable-settings-app": "failed to load application settings",
 	} {
-		err := Inspect(ioutil.Discard, dir.Join(appname))
+		app, err := dockerapp.Load(dir.Join(appname))
+		assert.NilError(t, err)
+		err = Inspect(ioutil.Discard, app)
 		assert.Check(t, is.ErrorContains(err, expectedError))
 	}
 }
@@ -88,7 +90,9 @@ text: hello`),
 		"no-maintainers", "no-description", "no-settings", "full",
 	} {
 		outBuffer := new(bytes.Buffer)
-		err := Inspect(outBuffer, dir.Join(appname))
+		app, err := dockerapp.Load(dir.Join(appname))
+		assert.NilError(t, err)
+		err = Inspect(outBuffer, app)
 		assert.NilError(t, err)
 		golden.Assert(t, outBuffer.String(), fmt.Sprintf("inspect-%s.golden", appname))
 	}

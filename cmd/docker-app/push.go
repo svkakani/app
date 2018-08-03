@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/docker/app/internal/packager"
+	"github.com/docker/app/lib/dockerapp"
 	"github.com/docker/cli/cli"
 	"github.com/spf13/cobra"
 )
@@ -18,7 +18,11 @@ func pushCmd() *cobra.Command {
 		Short: "Push the application to a registry",
 		Args:  cli.RequiresMaxArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return packager.Push(firstOrEmpty(args), opts.namespace, opts.tag)
+			app, err := dockerapp.Load(firstOrEmpty(args))
+			if err != nil {
+				return err
+			}
+			return dockerapp.ToImageWithDefaults(app, opts.namespace, opts.tag)
 		},
 	}
 	cmd.Flags().StringVar(&opts.namespace, "namespace", "", "namespace to use (default: namespace in metadata)")

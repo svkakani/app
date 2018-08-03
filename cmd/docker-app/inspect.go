@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/docker/app/internal/packager"
+	"github.com/docker/app/lib/dockerapp"
 	"github.com/docker/app/internal/render"
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
@@ -15,12 +15,11 @@ func inspectCmd(dockerCli command.Cli) *cobra.Command {
 		Short: "Shows metadata and settings for a given application",
 		Args:  cli.RequiresMaxArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			app, err := packager.Extract(firstOrEmpty(args))
+			app, err := dockerapp.Load(firstOrEmpty(args))
 			if err != nil {
 				return err
 			}
-			defer app.Cleanup()
-			return render.Inspect(dockerCli.Out(), app.AppName)
+			return render.Inspect(dockerCli.Out(), app)
 		},
 	}
 }
