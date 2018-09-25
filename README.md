@@ -1,6 +1,6 @@
 # Docker Application Packages
 
-An *experimental* utility to help make Compose files more reusable and sharable. Fo
+An *experimental* utility to help make Compose files more reusable and sha
 
 
 ## The problem application packages solve
